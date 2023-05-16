@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jdsbbmq.dao.RoleMapper">
+
+    <!--添加权限（教师与课程的关系）-->
+    <insert id="addRole" parameterType="com.jdsbbmq.pojo.Role">
+        insert into role (id, course_id, teacher_id, sequence, create_time)
+        values (#{role.id}, #{role.course_id}, #{role.teacher_id}, #{role.sequence}, #{role.create_time})
+    </insert>
+
+    <!--删除权限（教师与课程的关系）-->
+    <delete id="deleteRole" parameterType="com.jdsbbmq.pojo.Role">
+        delete
+        from role
+        where id = #{id}
+    </delete>
+
+    <!--查询权限id-->
+    <select id="getRoleID" parameterType="com.jdsbbmq.pojo.Role" resultType="String">
+        select id
+        from role
+        where course_id = #{role.course_id}
+          and sequence = #{role.sequence}
+    </select>
+
+    <!--获取权限信息(根据teacher_id)-->
+    <select id="roleList" parameterType="String" resultMap="roleListMap">
+        select c.title as course_title,
+               c.type  as course_type,
+               c.speaker_id,
+               c.supervisor_id,
+               r.id,
+               r.create_time,
+               r.sequence
+        from role r,
+             course c
+        where r.course_id = c.id
+          and r.teacher_id = #{teacher_id}
+    </select>
+
+    <resultMap id="roleListMap" type="com.jdsbbmq.pojo.Role">
+        <id property="id" column="id"/>
+        <result property="sequence" column="sequence"/>
+        <result property="create_time" column="create_time"/>
+        <result property="course_title" column="course_title"/>
+        <result property="course_type" column="course_type"/>
+        <result property="speaker_id" column="speaker_id"/>
+        <result property="supervisor_id" column="supervisor_id"/>
+        <!--根据speaker_id和supervisor_id返回speaker_name和supervisor_name-->
+        <association property="speaker_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="speaker_id"/>
+        <association property="supervisor_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="supervisor_id"/>
+    </resultMap>
+
+    <!--审批流-->
+    <select id="courseFlow" parameterType="String" resultMap="courseFlowMap">
+        select c.id,
+               c.title,
+               c.type,
+               c.speaker_id,
+               c.supervisor_id
+        from course c
+        where c.id = #{id}
+    </select>
+
+    <resultMap id="courseFlowMap" type="com.jdsbbmq.pojo.Course">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="type" column="type"/>
+        <result property="speaker_id" column="speaker_id"/>
+        <result property="supervisor_id" column="supervisor_id"/>
+        <!--根据speaker_id和supervisor_id返回speaker_name和supervisor_name-->
+        <association property="speaker_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="speaker_id"/>
+        <association property="supervisor_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="supervisor_id"/>
+        <!--获得该课程的审批人列表-->
+        <collection property="approvers" ofType="com.jdsbbmq.pojo.Role"
+                    select="com.jdsbbmq.dao.RoleMapper.getApproverList" column="id"/>
+    </resultMap>
+
+    <!--获得审批人列表-->
+    <select id="getApproverList" parameterType="String" resultMap="approverListMap">
+        select r.id, r.course_id, r.teacher_id, r.sequence
+        from role r
+        where r.course_id = #{id}
+          and r.sequence != 0
+          and r.sequence != 1
+        order by r.sequence
+    </select>
+
+    <resultMap id="approverListMap" type="com.jdsbbmq.pojo.Role">
+        <id property="id" column="id"/>
+        <result property="course_id" column="course_id"/>
+        <result property="teacher_id" column="teacher_id"/>
+        <result property="sequence" column="sequence"/>
+        <!--根据teacher_id返回teacher_name-->
+        <association property="teacher_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="teacher_id"/>
+    </resultMap>
+
+    <!--获得审批人数-->
+    <select id="selectApproverCount" parameterType="String" resultType="int">
+        select count(*)
+        from role r
+        where r.course_id = #{id}
+    </select>
+
+    <!--提交前先删除原有的审批流（第三以上）-->
+    <delete id="deleteRoleByCourseID" parameterType="String">
+        delete
+        from role
+        where course_id = #{course_id}
+          and sequence != 0
+          and sequence != 1
+    </delete>
+
+</mapper>

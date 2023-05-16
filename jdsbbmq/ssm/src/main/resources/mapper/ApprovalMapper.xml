@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jdsbbmq.dao.ApprovalMapper">
+
+    <!--查询自己的审批-->
+    <select id="approvalList" resultMap="approvalListMap">
+        select a.*, c.title as course_title, u.name as stu_name, ap.progress, r.sequence, ap.proof_path
+        from approval a,
+             application ap,
+             course c,
+             user u,
+             role r
+        where a.teacher_id = #{teacher_id}
+          and a.application_id = ap.id
+          and ap.course_id = c.id
+          and ap.stu_id = u.id
+          and r.teacher_id = a.teacher_id
+          and r.course_id = c.id
+          and r.sequence = a.sequence
+    </select>
+
+    <resultMap id="approvalListMap" type="com.jdsbbmq.pojo.Approval">
+        <id property="id" column="id"/>
+        <result property="teacher_id" column="teacher_id"/>
+        <result property="application_id" column="application_id"/>
+        <result property="pass" column="pass"/>
+        <result property="reason" column="reason"/>
+        <result property="create_time" column="create_time"/>
+        <result property="course_title" column="course_title"/>
+        <result property="stu_name" column="stu_name"/>
+        <result property="progress" column="progress"/>
+        <result property="sequence" column="sequence"/>
+        <result property="proof_path" column="proof_path"/>
+    </resultMap>
+
+    <!--通过申请，即创建审批-->
+    <insert id="passApplication" parameterType="com.jdsbbmq.pojo.Approval">
+        insert into javaweb.approval(id, teacher_id, application_id, pass, sequence, create_time)
+        values (#{approval.id}, #{approval.teacher_id}, #{approval.application_id}, #{approval.pass},
+                #{approval.sequence}, #{approval.create_time})
+    </insert>
+
+    <!--拒绝申请，即创建审批-->
+    <insert id="failApplication" parameterType="com.jdsbbmq.pojo.Approval">
+        insert into javaweb.approval(id, teacher_id, application_id, pass, reason, sequence, create_time)
+        values (#{approval.id}, #{approval.teacher_id}, #{approval.application_id}, #{approval.pass},
+                #{approval.reason}, #{approval.sequence}, #{approval.create_time})
+    </insert>
+
+    <!--撤销审批-->
+    <delete id="deleteApproval" parameterType="String">
+        delete
+        from javaweb.approval
+        where id = #{id}
+    </delete>
+
+    <!--修改驳回理由-->
+    <update id="updateApproval" parameterType="com.jdsbbmq.pojo.Approval">
+        update javaweb.approval
+        set reason = #{approval.reason}
+        where id = #{approval.id}
+    </update>
+
+    <!--查询全部审批-->
+    <select id="approvalListAll" resultMap="approvalListMap2">
+        select a.*, c.title as course_title, u.name as stu_name, ap.progress, a.sequence
+        from approval a,
+             application ap,
+             course c,
+             user u
+        where a.application_id = ap.id
+          and ap.course_id = c.id
+          and ap.stu_id = u.id
+    </select>
+
+    <resultMap id="approvalListMap2" type="com.jdsbbmq.pojo.Approval">
+        <id property="id" column="id"/>
+        <result property="teacher_id" column="teacher_id"/>
+        <result property="application_id" column="application_id"/>
+        <result property="pass" column="pass"/>
+        <result property="reason" column="reason"/>
+        <result property="create_time" column="create_time"/>
+        <result property="course_title" column="course_title"/>
+        <result property="stu_name" column="stu_name"/>
+        <result property="progress" column="progress"/>
+        <result property="sequence" column="sequence"/>
+        <result property="proof_path" column="proof_path"/>
+        <!--根据teacher_id返回speaker_name和teacher_name-->
+        <association property="teacher_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="teacher_id"/>
+    </resultMap>
+
+</mapper>

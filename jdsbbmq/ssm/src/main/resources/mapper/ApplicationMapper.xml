@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jdsbbmq.dao.ApplicationMapper">
+
+    <!--查询课程已选人数-->
+    <select id="selectCourseApplicationCount" resultType="int">
+        SELECT count(*)
+        from javaweb.application
+        where course_id = #{course_id}
+    </select>
+
+    <!--添加申请-->
+    <insert id="insert" parameterType="com.jdsbbmq.pojo.Application">
+        insert into javaweb.application(id, stu_id, reason, course_id, proof_path, apply_time)
+        values (#{application.id}, #{application.stu_id}, #{application.reason}, #{application.course_id},
+                #{application.proof_path}, #{application.apply_time})
+    </insert>
+
+    <!--返回此申请被驳回的原因-->
+    <select id="selectCourseApplicationReason" resultType="String">
+        select reason
+        from javaweb.approval
+        where application_id = #{application_id}
+          and pass = 0
+    </select>
+
+    <!--查询要审批的申请-->
+    <select id="applyList" resultMap="ApplicationListMap">
+        select a.id, a.stu_id, a.reason, a.course_id, a.apply_time, a.progress, a.proof_path
+        from javaweb.application a,
+             javaweb.course c,
+             javaweb.role r
+        where a.course_id = c.id
+          and c.id = r.course_id
+          and a.progress = r.sequence
+          and a.finish != -1
+          and r.teacher_id = #{user_id}
+    </select>
+
+    <resultMap id="ApplicationListMap" type="com.jdsbbmq.pojo.Application">
+        <id column="id" property="id"/>
+        <result column="stu_id" property="stu_id"/>
+        <result column="reason" property="reason"/>
+        <result column="course_id" property="course_id"/>
+        <result column="apply_time" property="apply_time"/>
+        <result column="progress" property="progress"/>
+        <result column="proof_path" property="proof_path"/>
+        <association property="stu_name" javaType="com.jdsbbmq.pojo.User"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="stu_id"/>
+        <association property="course_name" javaType="com.jdsbbmq.pojo.Course"
+                     select="com.jdsbbmq.dao.CourseMapper.getCourseName" column="course_id"/>
+    </resultMap>
+
+    <!--删除申请-->
+    <delete id="deleteApplication" parameterType="String">
+        delete
+        from javaweb.application
+        where id = #{application_id}
+    </delete>
+
+    <!--修改申请-->
+    <update id="updateApplication" parameterType="com.jdsbbmq.pojo.Application">
+        update javaweb.application
+        set reason = #{application.reason}
+        where id = #{application.id}
+    </update>
+
+    <!--获得申请（带有所需审批数）-->
+    <select id="selectApplication" resultMap="ApplicationMap">
+        select a.id,
+               a.stu_id,
+               a.reason,
+               a.course_id,
+               a.apply_time,
+               a.progress,
+               a.finish
+        from javaweb.application a,
+             javaweb.role r
+        where a.course_id = r.course_id
+          and a.id = #{application_id}
+    </select>
+
+    <resultMap id="ApplicationMap" type="com.jdsbbmq.pojo.Application">
+        <id column="id" property="id"/>
+        <result column="stu_id" property="stu_id"/>
+        <result column="reason" property="reason"/>
+        <result column="course_id" property="course_id"/>
+        <result column="apply_time" property="apply_time"/>
+        <result column="progress" property="progress"/>
+        <result column="finish" property="finish"/>
+        <association property="stu_name" javaType="com.jdsbbmq.pojo.User"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="stu_id"/>
+        <association property="course_name" javaType="com.jdsbbmq.pojo.Course"
+                     select="com.jdsbbmq.dao.CourseMapper.getCourseName" column="course_id"/>
+    </resultMap>
+
+    <!--申请通过，申请进度+1,如果申请进度完成，则finish=1-->
+    <!--申请进度是否完成需要联合role表查询到最大的sequence和progress对比-->
+    <update id="updateApplicationPass" parameterType="String">
+        update javaweb.application
+        <set>
+            progress = progress + 1,
+            finish = case when progress = (select max(sequence + 1) from javaweb.role where course_id = #{course_id})
+            then 1
+            else 0
+            end
+        </set>
+        where id = #{application_id}
+    </update>
+
+    <!--申请驳回，申请进度+1，finish=-1，申请失败-->
+    <update id="updateApplicationFail" parameterType="String">
+        update javaweb.application
+        <set>
+            progress = progress + 1,
+            finish = -1
+        </set>
+        where id = #{application_id}
+    </update>
+
+    <!--还原申请进度-->
+    <update id="updateApplicationProgress" parameterType="String">
+        update javaweb.application
+        <set>
+            progress = progress - 1,
+            finish = 0
+        </set>
+        where id = #{application_id}
+    </update>
+
+    <!--获取全部课程申请信息-->
+    <select id="applyListAll" resultMap="applyMapMore">
+        select c.id,
+               c.type,
+               c.title,
+               c.speaker_id,
+               c.supervisor_id,
+               a.apply_time,
+               a.progress,
+               a.finish,
+               a.proof_path,
+               a.id     as application_id,
+               a.reason as apply_reason,
+               a.stu_id as stu_id
+        from course c,
+             application a
+        where c.id = a.course_id
+    </select>
+
+    <resultMap id="applyMapMore" type="com.jdsbbmq.pojo.Course">
+        <id column="id" property="id"/>
+        <result column="type" property="type"/>
+        <result column="title" property="title"/>
+        <result column="speaker_id" property="speaker_id"/>
+        <result column="supervisor_id" property="supervisor_id"/>
+        <result column="apply_time" property="apply_time"/>
+        <result column="progress" property="progress"/>
+        <result column="finish" property="finish"/>
+        <result column="application_id" property="application_id"/>
+        <result column="apply_reason" property="apply_reason"/>
+        <result column="stu_id" property="stu_id"/>
+        <result column="proof_path" property="proof_path"/>
+        <!--根据speaker_id和supervisor_id返回speaker_name和supervisor_name-->
+        <association property="speaker_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="speaker_id"/>
+        <association property="supervisor_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="supervisor_id"/>
+        <!--根据stu_id返回speaker_name和stu_name-->
+        <association property="stu_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="stu_id"/>
+    </resultMap>
+
+    <!--获得证明文件路径-->
+    <select id="getProofPath" parameterType="String" resultType="String">
+        select proof_path
+        from javaweb.application
+        where id = #{id}
+    </select>
+
+</mapper>

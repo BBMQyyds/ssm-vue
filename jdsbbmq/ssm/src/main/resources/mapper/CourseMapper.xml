@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jdsbbmq.dao.CourseMapper">
+
+    <!--查询学生可选Course列表（已申请的课程不可选）-->
+    <select id="courseList" resultMap="courseMap">
+        select c.id, c.type, c.title, c.description, c.speaker_id, c.supervisor_id, c.create_time
+        from course c
+        where c.id not in (select course_id
+                           from application
+                           where stu_id = #{user_id})
+    </select>
+
+    <!--查询课程列表-->
+    <select id="selectCourseList" resultMap="courseMap">
+        select c.id, c.type, c.title, c.description, c.speaker_id, c.supervisor_id, c.create_time
+        from course c
+    </select>
+
+    <resultMap id="courseMap" type="com.jdsbbmq.pojo.Course">
+        <id column="id" property="id"/>
+        <result column="type" property="type"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="speaker_id" property="speaker_id"/>
+        <result column="supervisor_id" property="supervisor_id"/>
+        <result column="create_time" property="create_time"/>
+        <!--根据speaker_id和supervisor_id返回speaker_name和supervisor_name-->
+        <association property="speaker_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="speaker_id"/>
+        <association property="supervisor_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="supervisor_id"/>
+        <!--根据id返回已选的学生人数（已申请）-->
+        <association property="apply_count" javaType="int"
+                     select="com.jdsbbmq.dao.ApplicationMapper.selectCourseApplicationCount" column="id"/>
+    </resultMap>
+
+    <!--根据course_id获得courseDetail-->
+    <select id="selectCourseDetail" resultMap="courseMap">
+        select c.id, c.type, c.title, c.description, c.speaker_id, c.supervisor_id, c.create_time
+        from course c
+        where c.id = #{course_id}
+    </select>
+
+    <!--根据user_id获得已申请course-->
+    <select id="selectAppliedCourseList" resultMap="courseMapMore">
+        select c.id,
+               c.type,
+               c.title,
+               c.speaker_id,
+               c.supervisor_id,
+               a.apply_time,
+               a.progress,
+               a.finish,
+               a.id     as application_id,
+               a.reason as apply_reason
+        from course c,
+             application a
+        where c.id = a.course_id
+          and a.stu_id = #{user_id}
+    </select>
+
+    <resultMap id="courseMapMore" type="com.jdsbbmq.pojo.Course">
+        <id column="id" property="id"/>
+        <result column="type" property="type"/>
+        <result column="title" property="title"/>
+        <result column="speaker_id" property="speaker_id"/>
+        <result column="supervisor_id" property="supervisor_id"/>
+        <result column="apply_time" property="apply_time"/>
+        <result column="progress" property="progress"/>
+        <result column="finish" property="finish"/>
+        <result column="application_id" property="application_id"/>
+        <result column="apply_reason" property="apply_reason"/>
+        <!--根据speaker_id和supervisor_id返回speaker_name和supervisor_name-->
+        <association property="speaker_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="speaker_id"/>
+        <association property="supervisor_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="supervisor_id"/>
+        <!--根据id返回已选的学生人数（已申请）-->
+        <association property="apply_count" javaType="int"
+                     select="com.jdsbbmq.dao.ApplicationMapper.selectCourseApplicationCount" column="id"/>
+    </resultMap>
+
+    <!--根据course_id获取课程信息(包含进度)-->
+    <select id="selectCourseDetailHavingProgress" resultMap="courseMapMoreMore">
+        select c.id,
+               c.type,
+               c.title,
+               c.description,
+               c.speaker_id,
+               c.supervisor_id,
+               a.id as application_id,
+               a.progress,
+               a.finish,
+               a.reason,
+               a.proof_path
+        from course c,
+             application a
+        where c.id = a.course_id
+          and c.id = #{course_id}
+          and a.stu_id = #{user_id}
+    </select>
+
+    <resultMap id="courseMapMoreMore" type="com.jdsbbmq.pojo.Course">
+        <id column="id" property="id"/>
+        <result column="type" property="type"/>
+        <result column="title" property="title"/>
+        <result column="speaker_id" property="speaker_id"/>
+        <result column="supervisor_id" property="supervisor_id"/>
+        <result column="application_id" property="application_id"/>
+        <result column="progress" property="progress"/>
+        <result column="finish" property="finish"/>
+        <result column="reason" property="apply_reason"/>
+        <result column="proof_path" property="proof_path"/>
+        <!--根据speaker_id和supervisor_id返回speaker_name和supervisor_name-->
+        <association property="speaker_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="speaker_id"/>
+        <association property="supervisor_name" javaType="String"
+                     select="com.jdsbbmq.dao.UserMapper.getUserName" column="supervisor_id"/>
+        <!--根据id返回已选的学生人数（已申请）-->
+        <association property="apply_count" javaType="int"
+                     select="com.jdsbbmq.dao.ApplicationMapper.selectCourseApplicationCount" column="id"/>
+        <!--若有，返回此申请被驳回的原因-->
+        <association property="reject_reason" javaType="String"
+                     select="com.jdsbbmq.dao.ApplicationMapper.selectCourseApplicationReason" column="application_id"/>
+        <!--该课程审批人数-->
+        <association property="approver_count" javaType="int"
+                     select="com.jdsbbmq.dao.RoleMapper.selectApproverCount" column="id"/>
+    </resultMap>
+
+    <!--添加课程-->
+    <insert id="addCourse" parameterType="com.jdsbbmq.pojo.Course">
+        insert into course (id, type, title, description, create_time)
+        values (#{course.id}, #{course.type}, #{course.title}, #{course.description}, #{course.create_time})
+    </insert>
+
+    <!--根据course_id删除课程-->
+    <delete id="deleteCourse" parameterType="String">
+        delete
+        from course
+        where id = #{id}
+    </delete>
+
+    <!--根据course_id更新课程信息-->
+    <update id="updateCourse" parameterType="com.jdsbbmq.pojo.Course">
+        update course
+        <set>
+            <if test="course.type != null">
+                type = #{course.type},
+            </if>
+            <if test="course.title != null">
+                title = #{course.title},
+            </if>
+            <if test="course.description != null">
+                description = #{course.description},
+            </if>
+            <if test="course.speaker_id != null">
+                speaker_id = #{course.speaker_id},
+            </if>
+            <if test="course.supervisor_id != null">
+                supervisor_id = #{course.supervisor_id},
+            </if>
+            <if test="course.create_time != null">
+                create_time = #{course.create_time},
+            </if>
+        </set>
+        where id = #{course.id}
+    </update>
+
+    <!--获得课程名-->
+    <select id="getCourseName" resultType="String">
+        select title
+        from course
+        where id = #{id}
+    </select>
+
+</mapper>

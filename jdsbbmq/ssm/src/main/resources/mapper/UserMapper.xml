@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jdsbbmq.dao.UserMapper">
+
+    <!--登录-->
+    <select id="login" resultType="com.jdsbbmq.pojo.User">
+        select id, account, name
+        from javaweb.user
+        where account = #{account}
+          and pwd = #{pwd}
+    </select>
+
+    <!--更新cookie-->
+    <insert id="updateCookie" parameterType="map">
+        insert into javaweb.cookie (id, user_id, create_time, expire_time)
+            value (#{id}, #{user_id}, #{start}, #{end})
+        on duplicate key update id          = #{id},
+                                create_time = #{start},
+                                expire_time = #{end}
+    </insert>
+
+    <!--判断登录状态-->
+    <select id="isLogin" resultType="String">
+        select user.account
+        from javaweb.cookie,
+             javaweb.user
+        where cookie.id = #{id}
+          and cookie.user_id = #{user_id}
+          and cookie.expire_time > #{date}
+          and user.id = cookie.user_id
+    </select>
+
+    <!--注册-->
+    <insert id="register" parameterType="com.jdsbbmq.pojo.User">
+        insert into javaweb.user(id, account, pwd, name, role, college, create_time)
+        values (#{user.id}, #{user.account}, #{user.pwd}, #{user.name}, #{user.role}, #{user.college},
+                #{user.create_time})
+    </insert>
+
+    <!--根据account查询是否存在-->
+    <select id="isExist" resultType="int">
+        select count(*)
+        from javaweb.user
+        where account = #{account}
+    </select>
+
+    <!--根据account查询ID-->
+    <select id="getUserID" resultType="String">
+        select id
+        from javaweb.user
+        where account = #{account}
+    </select>
+
+    <!--根据id查询名字-->
+    <select id="getUserName" resultType="String">
+        select name
+        from javaweb.user
+        where id = #{id}
+    </select>
+
+    <!--用户列表-->
+    <select id="userList" resultMap="userListMap">
+        select id, account, name, role, create_time, college
+        from javaweb.user
+        where account not like 'a%'
+    </select>
+
+    <resultMap id="userListMap" type="com.jdsbbmq.pojo.User">
+        <id column="id" property="id"/>
+        <result column="account" property="account"/>
+        <result column="name" property="name"/>
+        <result column="role" property="role"/>
+        <result column="create_time" property="create_time"/>
+        <result column="college" property="college"/>
+    </resultMap>
+
+    <!--删除用户-->
+    <delete id="deleteUser" parameterType="String">
+        delete
+        from javaweb.user
+        where id = #{id}
+    </delete>
+
+    <!--修改用户-->
+    <update id="updateUser" parameterType="com.jdsbbmq.pojo.User">
+        update javaweb.user
+        set name    = #{user.name},
+            role    = #{user.role},
+            college = #{user.college}
+        where id = #{user.id}
+    </update>
+
+    <!--根据名字查找老师id-->
+    <select id="getTeacherID" resultType="String">
+        select id
+        from javaweb.user
+        where name = #{name}
+          and account like 't%'
+        limit 1
+    </select>
+
+</mapper>

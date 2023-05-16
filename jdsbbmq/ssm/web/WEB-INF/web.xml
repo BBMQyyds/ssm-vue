@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+    <!--容器初始化时，负责启动spring容器-->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:application.xml</param-value>
+    </context-param>
+
+    <!--注册DispatcherServlet，这是springmvc的核心，就是个servlet-->
+    <servlet>
+        <servlet-name>springmvc</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>classpath:application.xml</param-value>
+        </init-param>
+        <!--加载时先启动-->
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <!--/ 匹配所有的请求；（不包括.jsp）-->
+    <!--/* 匹配所有的请求；（包括.jsp）-->
+    <servlet-mapping>
+        <servlet-name>springmvc</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+
+    <!--RoleServlet-->
+    <servlet>
+        <servlet-name>RoleServlet</servlet-name>
+        <servlet-class>com.jdsbbmq.servlet.RoleServlet</servlet-class>
+        <init-param>
+            <param-name>roleService</param-name>
+            <param-value>com.jdsbbmq.service.impl.RoleServiceImpl</param-value>
+        </init-param>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>RoleServlet</servlet-name>
+        <url-pattern>/role/*</url-pattern>
+    </servlet-mapping>
+
+    <!--UserServlet-->
+    <servlet>
+        <servlet-name>UserServlet</servlet-name>
+        <servlet-class>com.jdsbbmq.servlet.UserServlet</servlet-class>
+        <init-param>
+            <param-name>userService</param-name>
+            <param-value>com.jdsbbmq.service.impl.UserServiceImpl</param-value>
+        </init-param>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UserServlet</servlet-name>
+        <url-pattern>/user/*</url-pattern>
+    </servlet-mapping>
+
+    <!--CourseServlet-->
+    <servlet>
+        <servlet-name>CourseServlet</servlet-name>
+        <servlet-class>com.jdsbbmq.servlet.CourseServlet</servlet-class>
+        <init-param>
+            <param-name>courseService</param-name>
+            <param-value>com.jdsbbmq.service.impl.CourseServiceImpl</param-value>
+        </init-param>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CourseServlet</servlet-name>
+        <url-pattern>/course/*</url-pattern>
+    </servlet-mapping>
+
+    <!--ApprovalServlet-->
+    <servlet>
+        <servlet-name>ApprovalServlet</servlet-name>
+        <servlet-class>com.jdsbbmq.servlet.ApprovalServlet</servlet-class>
+        <init-param>
+            <param-name>approvalService</param-name>
+            <param-value>com.jdsbbmq.service.impl.ApprovalServiceImpl</param-value>
+        </init-param>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ApprovalServlet</servlet-name>
+        <url-pattern>/approval/*</url-pattern>
+    </servlet-mapping>
+
+    <!--ApplicationServlet-->
+    <servlet>
+        <servlet-name>ApplicationServlet</servlet-name>
+        <servlet-class>com.jdsbbmq.servlet.ApplicationServlet</servlet-class>
+        <init-param>
+            <param-name>applicationService</param-name>
+            <param-value>com.jdsbbmq.service.impl.ApplicationServiceImpl</param-value>
+        </init-param>
+        <multipart-config>
+            <max-file-size>5242880</max-file-size>
+            <max-request-size>10485760</max-request-size>
+            <file-size-threshold>0</file-size-threshold>
+        </multipart-config>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ApplicationServlet</servlet-name>
+        <url-pattern>/application/*</url-pattern>
+    </servlet-mapping>
+
+    <filter>
+        <filter-name>authFilter</filter-name>
+        <filter-class>com.jdsbbmq.filter.AuthFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>authFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>encodingFilter</filter-name>
+        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>encodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+</web-app>
